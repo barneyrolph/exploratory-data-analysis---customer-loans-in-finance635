@@ -6,10 +6,15 @@ import yaml
 
 class RDSDatabaseConnector:
     '''
-    This class is used to connect to a postgresql database using psycopg2 and read tables from that database.
+    This class is used to connect to a postgresql 
+    database using psycopg2 and read tables from 
+    that database.
 
     Attributes:
-    cred_dict (dict) : A dictionary file with the configuration information for the specific database
+    -----------
+    cred_dict (dict) : A dictionary file with the 
+    configuration information for the specific 
+    database
     '''
 
     def __init__(self, cred_dict):
@@ -35,13 +40,17 @@ class RDSDatabaseConnector:
     
     def db_pull_table(self, engine, table):
         '''
-        This function reads a table from the database that has been connected to.
+        This function reads a table from the database
+        that has been connected to.
 
-        Args:
-        engine (sqlalchemy.engine.base.Engine): The engine to connect with the database
+        Arguments:
+        -----
+        engine (sqlalchemy.engine.base.Engine): The 
+        engine to connect with the database 
         table (str): the name of the table to be read
 
-        Returns: 
+        Returns:
+        -------- 
         the table as a pandas df
         '''
         self.engine = engine
@@ -51,7 +60,8 @@ class RDSDatabaseConnector:
 
 class DataTransform:
     """
-    A class to perform various data transformations on a pandas DataFrame.
+    A class to perform various data transformations on a
+    pandas DataFrame.
     
     Attributes:
     ----------
@@ -61,7 +71,8 @@ class DataTransform:
 
     def __init__(self, data_frame):
         """
-        Constructs all the necessary attributes for the DataTransform object.
+        Constructs all the necessary attributes for the 
+        DataTransform object.
 
         Parameters:
         ----------
@@ -72,12 +83,14 @@ class DataTransform:
 
     def format_to_date(self, column):
         """
-        Converts the specified column to datetime format.
+        Converts the specified column to datetime 
+        format.
 
         Parameters:
         ----------
         column : str
-            The name of the column to be converted to datetime format.
+            The name of the column to be converted 
+            to datetime format.
         """
         try:
             self.data_frame[column] = pd.to_datetime(self.data_frame[column])
@@ -100,35 +113,20 @@ class DataTransform:
         except Exception as e:
             print(f"Error converting column '{column}' to categorical: {e}")
 
-    def format_to_time_period(self, column, freq='M'):
-        """
-        Converts the specified column to a period data type with the given frequency.
-
-        Parameters:
-        ----------
-        column : str
-            The name of the column to be converted to period type.
-        freq : str, default 'M'
-            The frequency for the period conversion (e.g., 'M' for month, 'Q' for quarter, 'A' for year).
-        """
-        try:
-            self.data_frame[column] = pd.to_datetime(self.data_frame[column]).dt.to_period(freq)
-            print(f"Column '{column}' converted to period format with frequency '{freq}'.")
-        except Exception as e:
-            print(f"Error converting column '{column}' to period format: {e}")
-
     def extract_numerical(self, column):
         """
-        Extracts numerical values from the specified column and creates a new column with numerical values only.
+        Extracts numerical values from the specified column 
+        and creates a new column with numerical values only.
 
         Parameters:
         ----------
         column : str
-            The name of the column to extract numerical values from.
+            The name of the column to extract numerical 
+            values from.
         """
         try:
-            new_column_name = f"{column} numerical"
-            self.data_frame[new_column_name] = self.data_frame[column].apply(lambda x: self._extract_number(x))
+            new_column_name = f"{column}_numerical"
+            self.data_frame[new_column_name] = self.data_frame[column].apply(lambda x: self._extract_number(x)).astype(int)
             print(f"Column '{new_column_name}' created with numerical values extracted from '{column}'.")
         except Exception as e:
             print(f"Error extracting numerical values from column '{column}': {e}")
@@ -148,7 +146,84 @@ class DataTransform:
             The extracted numerical value.
         """
         match = re.search(r'\d+', str(value))
-        return int(match.group()) if match else None
+        return int(match.group()) if match else 0
+
+
+class DataFrameInfo:
+    """
+    A class to extract and display useful information from a pandas DataFrame.
+    
+    Attributes:
+    ----------
+    data_frame : pd.DataFrame
+        The pandas DataFrame to analyse.
+    """
+
+    def __init__(self, data_frame):
+        """
+        Constructs all the necessary attributes for the DataFrameInfo object.
+
+        Parameters:
+        ----------
+        data_frame : pd.DataFrame
+            The pandas DataFrame to be analysed.
+        """
+        self.data_frame = data_frame
+
+    def describe_columns(self):
+        """
+        Describes all columns in the DataFrame to check their data types.
+        """
+        print("Column Descriptions:\n", self.data_frame.dtypes)
+
+    def extract_statistics(self):
+        """
+        Extracts and prints statistical values: median, standard deviation, and mean for numerical columns,
+        and mode for categorical/object columns.
+        """
+        print("Statistics:")
+
+        numeric_cols = self.data_frame.select_dtypes(include=['number']).columns
+        categorical_cols = self.data_frame.select_dtypes(include=['category', 'object']).columns
+
+        if not numeric_cols.empty:
+            print("\nNumerical Columns:")
+            print("Median:\n", self.data_frame[numeric_cols].median())
+            print("\nStandard Deviation:\n", self.data_frame[numeric_cols].std())
+            print("\nMean:\n", self.data_frame[numeric_cols].mean())
+
+        if not categorical_cols.empty:
+            print("\nCategorical/Object Columns:")
+            for col in categorical_cols:
+                mode = self.data_frame[col].mode()
+                if not mode.empty:
+                    print(f"Mode of {col}: {mode.iloc[0]}")
+                else:
+                    print(f"Mode of {col}: No mode found")
+
+    def count_distinct_values(self):
+        """
+        Counts distinct values in categorical columns and prints the counts.
+        """
+        categorical_cols = self.data_frame.select_dtypes(include=['category', 'object']).columns
+        print("Distinct Values Count:")
+        for col in categorical_cols:
+            print(f"{col}: {self.data_frame[col].nunique()} distinct values")
+
+    def print_shape(self):
+        """
+        Prints the shape of the DataFrame.
+        """
+        print("Shape of the DataFrame:", self.data_frame.shape)
+
+    def null_values_count(self):
+        """
+        Generates a count and percentage count of NULL values in each column.
+        """
+        null_counts = self.data_frame.isnull().sum()
+        null_percentages = (null_counts / len(self.data_frame)) * 100
+        null_df = pd.DataFrame({'null_count': null_counts, 'null_percentage': null_percentages})
+        print("NULL Values Count and Percentage:\n", null_df)
 
 
 def cred_loader():
@@ -187,5 +262,3 @@ def csv_to_df(file_name):
     This function basically does the same as pandas read_csv.
     '''
     return pd.read_csv(file_name, index_col= 'Unnamed: 0')
-
-
