@@ -1,2 +1,3 @@
 credentials.yaml
 loan_payments.csv
+__pycache__/

@@ -1,7 +1,10 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 import re
+import seaborn as sns
 from sqlalchemy import create_engine
 import yaml
+
 
 
 class RDSDatabaseConnector:
@@ -224,6 +227,63 @@ class DataFrameInfo:
         null_percentages = (null_counts / len(self.data_frame)) * 100
         null_df = pd.DataFrame({'null_count': null_counts, 'null_percentage': null_percentages})
         print("NULL Values Count and Percentage:\n", null_df)
+
+
+class Plotter:
+    def __init__(self, dataframe):
+        """
+        Initialize the Plotter with a pandas dataframe.
+        
+        :param dataframe: pandas DataFrame
+        """
+        self.dataframe = dataframe.select_dtypes(include=['number'])
+
+    def plot_correlation_matrix(self, column=None):
+        """
+        Create and plot a correlation matrix for the dataframe.
+        If a column is provided, plot the correlation of that column with all other columns.
+        If no column is provided, plot the correlation matrix for all columns.
+        
+        :param column: str, column name of the dataframe
+        """
+        if column:
+            if column in self.dataframe.columns:
+                corr = self.dataframe.corr()[[column]].sort_values(by=column, ascending=False)
+                plt.figure(figsize=(10, 8))
+                sns.heatmap(corr, annot=True, fmt='.2f', cmap='coolwarm', vmin=-1, vmax=1)
+                plt.title(f'Correlation Matrix of {column} with Other Columns')
+                plt.show()
+            else:
+                print(f"Column '{column}' not found in dataframe.")
+        else:
+            corr = self.dataframe.corr()
+            plt.figure(figsize=(10, 8))
+            sns.heatmap(corr, annot=True, fmt='.2f', cmap='coolwarm', vmin=-1, vmax=1)
+            plt.title('Correlation Matrix')
+            plt.show()
+
+    def plot_distribution(self, variable=None):
+        """
+        Plot the distribution of a variable. If no variable is provided,
+        plot the distribution of all variables.
+        
+        :param variable: str, column name of the dataframe
+        """
+        if variable:
+            if variable in self.dataframe.columns:
+                plt.figure(figsize=(10, 6))
+                sns.histplot(self.dataframe[variable], kde=True)
+                plt.title(f'Distribution of {variable}')
+                plt.xlabel(variable)
+                plt.ylabel('Frequency')
+                plt.show()
+            else:
+                print(f"Variable '{variable}' not found in dataframe.")
+        else:
+            num_vars = self.dataframe.columns
+            self.dataframe[num_vars].hist(bins=30, figsize=(20, 15), layout=(len(num_vars)//3+1, 3))
+            plt.suptitle('Distribution of all variables')
+            plt.show()
 
 
 def cred_loader():
