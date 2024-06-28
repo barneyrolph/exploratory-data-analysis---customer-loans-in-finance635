@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import re
 import seaborn as sns
@@ -236,7 +237,8 @@ class Plotter:
         
         :param dataframe: pandas DataFrame
         """
-        self.dataframe = dataframe.select_dtypes(include=['number'])
+        self.dataframe_number = dataframe.select_dtypes(include=['number'])
+        self.dataframe = dataframe
 
     def plot_correlation_matrix(self, column=None):
         """
@@ -247,8 +249,8 @@ class Plotter:
         :param column: str, column name of the dataframe
         """
         if column:
-            if column in self.dataframe.columns:
-                corr = self.dataframe.corr()[[column]].sort_values(by=column, ascending=False)
+            if column in self.dataframe_number.columns:
+                corr = self.dataframe_number.corr()[[column]].sort_values(by=column, ascending=False)
                 plt.figure(figsize=(10, 8))
                 sns.heatmap(corr, annot=True, fmt='.2f', cmap='coolwarm', vmin=-1, vmax=1)
                 plt.title(f'Correlation Matrix of {column} with Other Columns')
@@ -256,7 +258,7 @@ class Plotter:
             else:
                 print(f"Column '{column}' not found in dataframe.")
         else:
-            corr = self.dataframe.corr()
+            corr = self.dataframe_number.corr()
             plt.figure(figsize=(10, 8))
             sns.heatmap(corr, annot=True, fmt='.2f', cmap='coolwarm', vmin=-1, vmax=1)
             plt.title('Correlation Matrix')
