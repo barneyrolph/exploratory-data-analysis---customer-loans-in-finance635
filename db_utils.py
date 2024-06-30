@@ -1,3 +1,4 @@
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -196,7 +197,6 @@ class DataTransform:
 
         # Calculate skewness
         skew_values = {
-            column_name: skew(self.data_frame[column_name].dropna()),
             f"{column_name}_log": skew(self.data_frame[f"{column_name}_log"].dropna()),
             f"{column_name}_box_cox": skew(self.data_frame[f"{column_name}_box_cox"].dropna()),
             f"{column_name}_yeo_j": skew(self.data_frame[f"{column_name}_yeo_j"].dropna())
@@ -206,7 +206,7 @@ class DataTransform:
         sorted_skew = sorted(skew_values.items(), key=lambda item: abs(item[1]))
 
         # Keep the original column and the transformed column with skew closest to zero
-        columns_to_keep = [sorted_skew[0][0], sorted_skew[1][0]]
+        columns_to_keep = [sorted_skew[0][0]]
         columns_to_drop = [col for col in skew_values.keys() if col not in columns_to_keep]
 
         # Drop the columns with skew furthest from zero
@@ -290,6 +290,29 @@ class DataFrameInfo:
         null_df = pd.DataFrame({'null_count': null_counts, 'null_percentage': null_percentages})
         print("NULL Values Count and Percentage:\n", null_df)
 
+    def detect_outliers(self):
+        """
+        Creates a box plot for each column in the data frame to help detect outliers.
+        """
+        num_columns = len(self.data_frame.columns)
+        num_rows = math.ceil(num_columns / 3)
+        
+        fig, axes = plt.subplots(num_rows, 3, figsize=(15, num_rows * 5))
+        axes = axes.flatten()
+
+        for i, column in enumerate(self.data_frame.columns):
+            if pd.api.types.is_numeric_dtype(self.data_frame[column]):
+                self.data_frame.boxplot(column=column, ax=axes[i])
+                axes[i].set_title(f'Box Plot of {column}')
+            else:
+                axes[i].set_visible(False)
+        
+        # Hide any unused subplots
+        for j in range(i + 1, len(axes)):
+            axes[j].set_visible(False)
+
+        plt.tight_layout()
+        plt.show()
 
 class Plotter:
     def __init__(self, dataframe):
