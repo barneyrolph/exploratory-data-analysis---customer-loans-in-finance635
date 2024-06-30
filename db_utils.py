@@ -314,6 +314,35 @@ class DataFrameInfo:
         plt.tight_layout()
         plt.show()
 
+    def remove_outliers(self, column_names):
+        """
+        Filters the data frame and returns only rows that don't contain outliers in any of the specified columns.
+        An outlier in each column is a value that falls below Q1 - 1.5 * IQR or above Q3 + 1.5 * IQR.
+
+        Parameters:
+        ----------
+        column_names : list of str
+            The names of the columns to check for outliers.
+        """
+        df_filtered = self.data_frame.copy()
+
+        for column_name in column_names:
+            if column_name not in self.data_frame.columns:
+                raise KeyError(f"Column {column_name} does not exist in the DataFrame.")
+            
+            if not pd.api.types.is_numeric_dtype(self.data_frame[column_name]):
+                raise TypeError(f"Column {column_name} is not numeric.")
+            
+            Q1 = df_filtered[column_name].quantile(0.25)
+            Q3 = df_filtered[column_name].quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            df_filtered = df_filtered[(df_filtered[column_name] >= lower_bound) & (df_filtered[column_name] <= upper_bound)]
+        
+        return df_filtered
+    
+    
 class Plotter:
     def __init__(self, dataframe):
         """
