@@ -1,3 +1,4 @@
 credentials.yaml
 loan_payments.csv
 __pycache__/
+loan_payments_no_null.csv

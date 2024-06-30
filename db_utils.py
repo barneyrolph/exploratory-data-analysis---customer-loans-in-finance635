@@ -3,9 +3,10 @@ import numpy as np
 import pandas as pd
 import re
 import seaborn as sns
+from scipy.stats import boxcox, yeojohnson, skew
+from statsmodels.graphics.gofplots import qqplot
 from sqlalchemy import create_engine
 import yaml
-
 
 
 class RDSDatabaseConnector:
@@ -151,7 +152,67 @@ class DataTransform:
         """
         match = re.search(r'\d+', str(value))
         return int(match.group()) if match else 0
+    
+    def log_transform(self, column_name):
+        """Applies a log transformation to the specified column and creates a new column."""
+        if column_name in self.data_frame.columns:
+            new_column_name = f"{column_name}_log"
+            self.data_frame[new_column_name] = self.data_frame[column_name].apply(lambda x: np.log(x) if x > 0 else 0)
+        else:
+            raise KeyError(f"Column {column_name} does not exist in the DataFrame.")
+        return self.data_frame
 
+    def box_cox_transform(self, column_name):
+        """Applies a Box-Cox transformation to the specified column and creates a new column."""
+        if column_name in self.data_frame.columns:
+            new_column_name = f"{column_name}_box_cox"
+            # Box-Cox requires strictly positive values
+            positive_values = self.data_frame[column_name][self.data_frame[column_name] > 0]
+            transformed_data, _ = boxcox(positive_values)
+            self.data_frame[new_column_name] = np.nan  # Initialize with NaN
+            self.data_frame.loc[self.data_frame[column_name] > 0, new_column_name] = transformed_data
+        else:
+            raise KeyError(f"Column {column_name} does not exist in the DataFrame.")
+        return self.data_frame
+
+    def yeo_johnson_transform(self, column_name):
+        """Applies a Yeo-Johnson transformation to the specified column and creates a new column."""
+        if column_name in self.data_frame.columns:
+            new_column_name = f"{column_name}_yeo_j"
+            self.data_frame[new_column_name], _ = yeojohnson(self.data_frame[column_name])
+        else:
+            raise KeyError(f"Column {column_name} does not exist in the DataFrame.")
+        return self.data_frame
+
+    def run_all_transformations_and_select_best(self, column_name):
+        """Runs all transformations, calculates skewness, and drops the three transformed columns with skew values furthest from zero."""
+        if column_name not in self.data_frame.columns:
+            raise KeyError(f"Column {column_name} does not exist in the DataFrame.")
+
+        # Run all transformations
+        self.log_transform(column_name)
+        self.box_cox_transform(column_name)
+        self.yeo_johnson_transform(column_name)
+
+        # Calculate skewness
+        skew_values = {
+            column_name: skew(self.data_frame[column_name].dropna()),
+            f"{column_name}_log": skew(self.data_frame[f"{column_name}_log"].dropna()),
+            f"{column_name}_box_cox": skew(self.data_frame[f"{column_name}_box_cox"].dropna()),
+            f"{column_name}_yeo_j": skew(self.data_frame[f"{column_name}_yeo_j"].dropna())
+        }
+
+        # Sort columns by skewness
+        sorted_skew = sorted(skew_values.items(), key=lambda item: abs(item[1]))
+
+        # Keep the original column and the transformed column with skew closest to zero
+        columns_to_keep = [sorted_skew[0][0], sorted_skew[1][0]]
+        columns_to_drop = [col for col in skew_values.keys() if col not in columns_to_keep]
+
+        # Drop the columns with skew furthest from zero
+        self.data_frame.drop(columns=columns_to_drop, inplace=True)
+
+        return self.data_frame
 
 class DataFrameInfo:
     """
@@ -286,7 +347,19 @@ class Plotter:
             self.dataframe[num_vars].hist(bins=30, figsize=(20, 15), layout=(len(num_vars)//3+1, 3))
             plt.suptitle('Distribution of all variables')
             plt.show()
+    def qqplot(self, column):
+        '''
+        Creates a Q-Q plots of a column.
 
+        Parameters:
+        -----------
+         column : str
+            The name of the column to plot. 
+            values from.
+        
+        '''
+        qq_plot = qqplot(self.dataframe[column] , scale=1 ,line='q', fit=True)
+        plt.show()
 
 def cred_loader():
     '''
