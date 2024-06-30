@@ -318,12 +318,13 @@ class DataFrameInfo:
         """
         Filters the data frame and returns only rows that don't contain outliers in any of the specified columns.
         An outlier in each column is a value that falls below Q1 - 1.5 * IQR or above Q3 + 1.5 * IQR.
-
+        
         Parameters:
         ----------
         column_names : list of str
             The names of the columns to check for outliers.
         """
+        initial_row_count = self.data_frame.shape[0]
         df_filtered = self.data_frame.copy()
 
         for column_name in column_names:
@@ -339,6 +340,10 @@ class DataFrameInfo:
             lower_bound = Q1 - 1.5 * IQR
             upper_bound = Q3 + 1.5 * IQR
             df_filtered = df_filtered[(df_filtered[column_name] >= lower_bound) & (df_filtered[column_name] <= upper_bound)]
+        
+        final_row_count = df_filtered.shape[0]
+        rows_removed = initial_row_count - final_row_count
+        print(f"Total rows removed: {rows_removed}")
         
         return df_filtered
     
@@ -372,7 +377,8 @@ class Plotter:
                 print(f"Column '{column}' not found in dataframe.")
         else:
             corr = self.dataframe_number.corr()
-            plt.figure(figsize=(10, 8))
+            num_cols = len(self.dataframe_number.columns)
+            plt.figure(figsize=(num_cols * 0.5, num_cols * 0.5))  # Adjust figsize based on number of columns
             sns.heatmap(corr, annot=True, fmt='.2f', cmap='coolwarm', vmin=-1, vmax=1)
             plt.title('Correlation Matrix')
             plt.show()

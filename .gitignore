@@ -4,3 +4,4 @@ __pycache__/
 loan_payments_no_null.csv
 loan_payments_more_normal.csv
 loan_payments_filtered.csv
+loan_payments_clean.csv
