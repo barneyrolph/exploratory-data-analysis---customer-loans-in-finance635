@@ -405,6 +405,7 @@ class Plotter:
             self.dataframe[num_vars].hist(bins=30, figsize=(20, 15), layout=(len(num_vars)//3+1, 3))
             plt.suptitle('Distribution of all variables')
             plt.show()
+            
     def qqplot(self, column):
         '''
         Creates a Q-Q plots of a column.
