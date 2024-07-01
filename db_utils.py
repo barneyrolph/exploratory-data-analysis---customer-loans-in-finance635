@@ -1,40 +1,44 @@
 import math
+import re
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import re
 import seaborn as sns
-from scipy.stats import boxcox, yeojohnson, skew
-from statsmodels.graphics.gofplots import qqplot
-from sqlalchemy import create_engine
 import yaml
+from scipy.stats import boxcox, yeojohnson, skew
+from sqlalchemy import create_engine
+from statsmodels.graphics.gofplots import qqplot
 
 
 class RDSDatabaseConnector:
-    '''
-    This class is used to connect to a postgresql 
+    """
+    This class is used to connect to a PostgreSQL 
     database using psycopg2 and read tables from 
     that database.
 
-    Attributes:
-    -----------
-    cred_dict (dict) : A dictionary file with the 
-    configuration information for the specific 
-    database
-    '''
+    Attributes
+    ----------
+    cred_dict : dict
+        A dictionary file with the configuration 
+        information for the specific database.
+    """
 
     def __init__(self, cred_dict):
+        """
+        Initialize with the credentials dictionary.
+        """
         self.cred_dict = cred_dict
-        '''
-         See help(RDSDatabaseConnector)
-        '''
 
     def db_connect(self):
-        '''
-        This function connects to the database.
-         
-        Returns: an Engine object from sqlalchemy
-        '''
+        """
+        Connect to the database.
+        
+        Returns
+        -------
+        sqlalchemy.engine.base.Engine
+            An Engine object from sqlalchemy.
+        """
         DATABASE_TYPE = 'postgresql'
         DBAPI = 'psycopg2'
         HOST = self.cred_dict['RDS_HOST']
@@ -45,20 +49,21 @@ class RDSDatabaseConnector:
         return create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
     
     def db_pull_table(self, engine, table):
-        '''
-        This function reads a table from the database
-        that has been connected to.
+        """
+        Read a table from the database.
 
-        Arguments:
-        -----
-        engine (sqlalchemy.engine.base.Engine): The 
-        engine to connect with the database 
-        table (str): the name of the table to be read
+        Parameters
+        ----------
+        engine : sqlalchemy.engine.base.Engine
+            The engine to connect with the database.
+        table : str
+            The name of the table to be read.
 
-        Returns:
-        -------- 
-        the table as a pandas df
-        '''
+        Returns
+        -------
+        pd.DataFrame
+            The table as a pandas DataFrame.
+        """
         self.engine = engine
         self.table = table
         return pd.read_sql_table(self.table, self.engine)
@@ -66,10 +71,9 @@ class RDSDatabaseConnector:
 
 class DataTransform:
     """
-    A class to perform various data transformations on a
-    pandas DataFrame.
+    A class to perform various data transformations on a pandas DataFrame.
     
-    Attributes:
+    Attributes
     ----------
     data_frame : pd.DataFrame
         The pandas DataFrame to be transformed.
@@ -77,10 +81,9 @@ class DataTransform:
 
     def __init__(self, data_frame):
         """
-        Constructs all the necessary attributes for the 
-        DataTransform object.
+        Initialize with the DataFrame.
 
-        Parameters:
+        Parameters
         ----------
         data_frame : pd.DataFrame
             The pandas DataFrame to be transformed.
@@ -89,14 +92,12 @@ class DataTransform:
 
     def format_to_date(self, column):
         """
-        Converts the specified column to datetime 
-        format.
+        Convert the specified column to datetime format.
 
-        Parameters:
+        Parameters
         ----------
         column : str
-            The name of the column to be converted 
-            to datetime format.
+            The name of the column to be converted to datetime format.
         """
         try:
             self.data_frame[column] = pd.to_datetime(self.data_frame[column])
@@ -106,9 +107,9 @@ class DataTransform:
 
     def format_to_categorical(self, column):
         """
-        Converts the specified column to categorical data type.
+        Convert the specified column to categorical data type.
 
-        Parameters:
+        Parameters
         ----------
         column : str
             The name of the column to be converted to categorical type.
@@ -121,14 +122,13 @@ class DataTransform:
 
     def extract_numerical(self, column):
         """
-        Extracts numerical values from the specified column 
-        and creates a new column with numerical values only.
+        Extract numerical values from the specified column 
+        and create a new column with numerical values only.
 
-        Parameters:
+        Parameters
         ----------
         column : str
-            The name of the column to extract numerical 
-            values from.
+            The name of the column to extract numerical values from.
         """
         try:
             new_column_name = f"{column}_numerical"
@@ -141,12 +141,12 @@ class DataTransform:
         """
         Helper function to extract numerical value from a string.
 
-        Parameters:
+        Parameters
         ----------
         value : str
             The string value to extract numerical part from.
 
-        Returns:
+        Returns
         -------
         int
             The extracted numerical value.
@@ -155,7 +155,19 @@ class DataTransform:
         return int(match.group()) if match else 0
     
     def log_transform(self, column_name):
-        """Applies a log transformation to the specified column and creates a new column."""
+        """
+        Apply a log transformation to the specified column and create a new column.
+
+        Parameters
+        ----------
+        column_name : str
+            The name of the column to be log transformed.
+
+        Returns
+        -------
+        pd.DataFrame
+            The DataFrame with the new log-transformed column.
+        """
         if column_name in self.data_frame.columns:
             new_column_name = f"{column_name}_log"
             self.data_frame[new_column_name] = self.data_frame[column_name].apply(lambda x: np.log(x) if x > 0 else 0)
@@ -164,7 +176,19 @@ class DataTransform:
         return self.data_frame
 
     def box_cox_transform(self, column_name):
-        """Applies a Box-Cox transformation to the specified column and creates a new column."""
+        """
+        Apply a Box-Cox transformation to the specified column and create a new column.
+
+        Parameters
+        ----------
+        column_name : str
+            The name of the column to be Box-Cox transformed.
+
+        Returns
+        -------
+        pd.DataFrame
+            The DataFrame with the new Box-Cox transformed column.
+        """
         if column_name in self.data_frame.columns:
             new_column_name = f"{column_name}_box_cox"
             # Box-Cox requires strictly positive values
@@ -177,7 +201,19 @@ class DataTransform:
         return self.data_frame
 
     def yeo_johnson_transform(self, column_name):
-        """Applies a Yeo-Johnson transformation to the specified column and creates a new column."""
+        """
+        Apply a Yeo-Johnson transformation to the specified column and create a new column.
+
+        Parameters
+        ----------
+        column_name : str
+            The name of the column to be Yeo-Johnson transformed.
+
+        Returns
+        -------
+        pd.DataFrame
+            The DataFrame with the new Yeo-Johnson transformed column.
+        """
         if column_name in self.data_frame.columns:
             new_column_name = f"{column_name}_yeo_j"
             self.data_frame[new_column_name], _ = yeojohnson(self.data_frame[column_name])
@@ -186,7 +222,19 @@ class DataTransform:
         return self.data_frame
 
     def run_all_transformations_and_select_best(self, column_name):
-        """Runs all transformations, calculates skewness, and drops the three transformed columns with skew values furthest from zero."""
+        """
+        Run all transformations, calculate skewness, and drop the three transformed columns with skew values furthest from zero.
+
+        Parameters
+        ----------
+        column_name : str
+            The name of the column to be transformed and assessed.
+
+        Returns
+        -------
+        pd.DataFrame
+            The DataFrame with the best transformed column kept.
+        """
         if column_name not in self.data_frame.columns:
             raise KeyError(f"Column {column_name} does not exist in the DataFrame.")
 
@@ -213,6 +261,7 @@ class DataTransform:
         self.data_frame.drop(columns=columns_to_drop, inplace=True)
 
         return self.data_frame
+
 
 class DataFrameInfo:
     """
@@ -378,7 +427,7 @@ class Plotter:
         else:
             corr = self.dataframe_number.corr()
             num_cols = len(self.dataframe_number.columns)
-            plt.figure(figsize=(num_cols * 0.5, num_cols * 0.5))  # Adjust figsize based on number of columns
+            plt.figure(figsize=(num_cols * 0.5, num_cols * 0.5))  # Adjusts figsize based on number of columns
             sns.heatmap(corr, annot=True, fmt='.2f', cmap='coolwarm', vmin=-1, vmax=1)
             plt.title('Correlation Matrix')
             plt.show()
@@ -405,7 +454,7 @@ class Plotter:
             self.dataframe[num_vars].hist(bins=30, figsize=(20, 15), layout=(len(num_vars)//3+1, 3))
             plt.suptitle('Distribution of all variables')
             plt.show()
-            
+
     def qqplot(self, column):
         '''
         Creates a Q-Q plots of a column.
@@ -419,6 +468,84 @@ class Plotter:
         '''
         qq_plot = qqplot(self.dataframe[column] , scale=1 ,line='q', fit=True)
         plt.show()
+    
+    def plot_histogram(self, column, bins=10):
+        """
+        Plot a histogram of the specified column.
+
+        Parameters
+        ----------
+        column : str
+            The name of the column to plot.
+        bins : int, optional
+            Number of bins for the histogram (default is 10).
+        """
+        plt.figure(figsize=(10, 6))
+        sns.histplot(self.data_frame[column], bins=bins, kde=True)
+        plt.title(f'Histogram of {column}')
+        plt.xlabel(column)
+        plt.ylabel('Frequency')
+        plt.show()
+
+    def plot_bar(self, column):
+        """
+        Plot a bar chart of the specified column.
+
+        Parameters
+        ----------
+        column : str
+            The name of the column to plot.
+        """
+        plt.figure(figsize=(10, 6))
+        sns.countplot(x=self.data_frame[column])
+        plt.title(f'Bar Plot of {column}')
+        plt.xlabel(column)
+        plt.ylabel('Count')
+        plt.xticks(rotation=90)
+        plt.show()
+
+    def plot_scatter(self, x_column, y_column):
+        """
+        Plot a scatter plot for two specified columns.
+
+        Parameters
+        ----------
+        x_column : str
+            The name of the x-axis column.
+        y_column : str
+            The name of the y-axis column.
+        """
+        plt.figure(figsize=(10, 6))
+        sns.scatterplot(x=self.data_frame[x_column], y=self.data_frame[y_column])
+        plt.title(f'Scatter Plot of {x_column} vs {y_column}')
+        plt.xlabel(x_column)
+        plt.ylabel(y_column)
+        plt.show()
+
+    def plot_box(self, column):
+        """
+        Plot a box plot of the specified column.
+
+        Parameters
+        ----------
+        column : str
+            The name of the column to plot.
+        """
+        plt.figure(figsize=(10, 6))
+        sns.boxplot(x=self.data_frame[column])
+        plt.title(f'Box Plot of {column}')
+        plt.xlabel(column)
+        plt.show()
+
+    def plot_pair(self):
+        """
+        Plot pairwise relationships in the DataFrame.
+        """
+        plt.figure(figsize=(10, 6))
+        sns.pairplot(self.data_frame)
+        plt.title('Pair Plot of DataFrame')
+        plt.show()
+
 
 def cred_loader():
     '''
@@ -442,17 +569,15 @@ def save_csv(table, name = 0):
     table.  It will save the csv to the same 
     directory as the code.
 
-    Args:
-    table (str): the name of the table in the database.
-    name (str): the desired name of the csv file which 
-    will default to the name of the table.
+    Arguments:
+    ----------
+    table: str
+        The name of the table in the database.
+    name: str
+        The desired name of the csv file which 
+        will default to the name of the table.
     '''
     dbc1 = RDSDatabaseConnector(cred_loader())
     df = dbc1.db_pull_table(dbc1.db_connect(),table)
     df.to_csv(f'{name}.csv')
 
-def csv_to_df(file_name):
-    '''
-    This function basically does the same as pandas read_csv.
-    '''
-    return pd.read_csv(file_name, index_col= 'Unnamed: 0')
