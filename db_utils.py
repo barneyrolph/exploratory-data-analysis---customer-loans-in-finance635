@@ -398,14 +398,14 @@ class DataFrameInfo:
     
     
 class Plotter:
-    def __init__(self, dataframe):
+    def __init__(self, data_frame):
         """
         Initialize the Plotter with a pandas dataframe.
         
         :param dataframe: pandas DataFrame
         """
-        self.dataframe_number = dataframe.select_dtypes(include=['number'])
-        self.dataframe = dataframe
+        self.data_frame_number = data_frame.select_dtypes(include=['number'])
+        self.data_frame = data_frame
 
     def plot_correlation_matrix(self, column=None):
         """
@@ -416,8 +416,8 @@ class Plotter:
         :param column: str, column name of the dataframe
         """
         if column:
-            if column in self.dataframe_number.columns:
-                corr = self.dataframe_number.corr()[[column]].sort_values(by=column, ascending=False)
+            if column in self.data_frame_number.columns:
+                corr = self.data_frame_number.corr()[[column]].sort_values(by=column, ascending=False)
                 plt.figure(figsize=(10, 8))
                 sns.heatmap(corr, annot=True, fmt='.2f', cmap='coolwarm', vmin=-1, vmax=1)
                 plt.title(f'Correlation Matrix of {column} with Other Columns')
@@ -425,8 +425,8 @@ class Plotter:
             else:
                 print(f"Column '{column}' not found in dataframe.")
         else:
-            corr = self.dataframe_number.corr()
-            num_cols = len(self.dataframe_number.columns)
+            corr = self.data_frame_number.corr()
+            num_cols = len(self.data_frame_number.columns)
             plt.figure(figsize=(num_cols * 0.5, num_cols * 0.5))  # Adjusts figsize based on number of columns
             sns.heatmap(corr, annot=True, fmt='.2f', cmap='coolwarm', vmin=-1, vmax=1)
             plt.title('Correlation Matrix')
@@ -440,9 +440,9 @@ class Plotter:
         :param variable: str, column name of the dataframe
         """
         if variable:
-            if variable in self.dataframe.columns:
+            if variable in self.data_frame.columns:
                 plt.figure(figsize=(10, 6))
-                sns.histplot(self.dataframe[variable], kde=True)
+                sns.histplot(self.data_frame[variable], kde=True)
                 plt.title(f'Distribution of {variable}')
                 plt.xlabel(variable)
                 plt.ylabel('Frequency')
@@ -450,8 +450,8 @@ class Plotter:
             else:
                 print(f"Variable '{variable}' not found in dataframe.")
         else:
-            num_vars = self.dataframe.columns
-            self.dataframe[num_vars].hist(bins=30, figsize=(20, 15), layout=(len(num_vars)//3+1, 3))
+            num_vars = self.data_frame.columns
+            self.data_frame[num_vars].hist(bins=30, figsize=(20, 15), layout=(len(num_vars)//3+1, 3))
             plt.suptitle('Distribution of all variables')
             plt.show()
 
@@ -466,7 +466,7 @@ class Plotter:
             values from.
         
         '''
-        qq_plot = qqplot(self.dataframe[column] , scale=1 ,line='q', fit=True)
+        qq_plot = qqplot(self.data_frame[column] , scale=1 ,line='q', fit=True)
         plt.show()
     
     def plot_histogram(self, column, bins=10):
