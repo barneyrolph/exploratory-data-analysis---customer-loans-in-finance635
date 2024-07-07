@@ -545,6 +545,30 @@ class Plotter:
         sns.pairplot(self.data_frame)
         plt.title('Pair Plot of DataFrame')
         plt.show()
+  
+    def plot_pie_chart(self, column, categories=None, colours=None):
+        """
+        Plot a pie chart of values in the specified column of the DataFrame.
+        
+        :param column: Column name to plot
+        :param categories: List of categories to enforce order
+        :param colours: List of colours corresponding to categories
+        """
+        if column not in self.data_frame.columns:
+            raise ValueError(f"Column '{column}' does not exist in the DataFrame.")
+        
+        # Get the values and their counts
+        data = self.data_frame[column].value_counts()
+
+        # Reindex to ensure all categories are present in the correct order
+        if categories is not None:
+            data = data.reindex(categories, fill_value=0)
+
+        # Plotting the pie chart
+        plt.figure(figsize=(8, 8))
+        plt.pie(data, labels=data.index, autopct='%1.1f%%', startangle=140, colors=colours)
+        plt.title(f'Pie Chart of {column}')
+        plt.show()
 
 
 def cred_loader():
